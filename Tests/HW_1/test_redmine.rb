@@ -3,7 +3,7 @@ require 'selenium-webdriver'
 
 require_relative 'create_random_account'
 
-class TestRegistration < Test::Unit::TestCase
+class TestRedmine < Test::Unit::TestCase
   include CreateRandomAccount
 
 

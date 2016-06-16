@@ -30,3 +30,4 @@ module CreateRandomAccount
     @driver.find_element(:name, 'commit').click
   end
 end
+
