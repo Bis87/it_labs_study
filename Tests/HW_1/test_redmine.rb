@@ -17,20 +17,19 @@ class TestRedmine < Test::Unit::TestCase
     @driver.quit
   end
 
+  #-------------- Auxiliary methods --------------
+
   def login
-    @wait.until{@driver.find_element(:xpath, '//a[@class="login"]').displayed?}
+    @wait.until{@driver.find_element(:class, 'login').displayed?}
     @driver.find_element(:class, 'login').click
     @driver.find_element(:id, 'username').send_keys(@login)
     @driver.find_element(:id, 'password').send_keys('1234')
-    @driver.find_element(:xpath, '//input[@type="submit"]').click
+    @driver.find_element(:name, 'login').click
   end
 
-
-
-  #-------------- Auxiliary methods --------------
   def logout
     @driver.find_element(:class, 'logout').click
-    @wait.until{@driver.find_element(:xpath, '//a[@class="register"]').displayed?}
+    @wait.until{@driver.find_element(:class, 'register').displayed?}
   end
 
   def change_password
@@ -51,9 +50,9 @@ class TestRedmine < Test::Unit::TestCase
 
   def new_participant
     @driver.find_element(:id, 'tab-members').click
-    @driver.find_element(:xpath, '//a[.="Новый участник"]').click
+    @driver.find_element(:xpath, '//a[@data-remote="true"][@class="icon icon-add"]').click
     @wait.until{@driver.find_element(:xpath, '//input[@id="principal_search"]').displayed?}
-    @driver.find_element(:xpath, '//input[@id="principal_search"]').send_keys(@lizard_firstname + ' ' + @lizard_lastname)
+    @driver.find_element(:xpath, '//input[@id="principal_search"]').send_keys(@lizard_firstname +' '+ @lizard_lastname)
     @wait.until{@driver.find_element(:xpath, '//label[contains(.,"'+@lizard_firstname +' '+ @lizard_lastname+'")]/input[@type="checkbox"]').displayed?}
     @driver.find_element(:xpath, '//label[contains(.,"'+@lizard_firstname +' '+ @lizard_lastname+'")]/input[@type="checkbox"]').click
     @wait.until{@driver.find_element(:xpath, '(//label[contains(.,"Developer")]/input[@type="checkbox"])[2]').displayed?}
@@ -63,29 +62,31 @@ class TestRedmine < Test::Unit::TestCase
   end
 
   def new_feature
-    @driver.find_element(:xpath, '//a[@class="new-issue"]').click
+    @driver.find_element(:class, 'new-issue').click
     @dropdown = @driver.find_element(:id, 'issue_tracker_id')
     @select_list = Selenium::WebDriver::Support::Select.new(@dropdown)
     @select_list.select_by(:text, 'Feature')
-    @driver.find_element(:id, 'issue_subject').send_keys('Lizards issue' + rand(100).to_s)
+    @driver.find_element(:id, 'issue_subject').send_keys('Lizards feature')
     @driver.find_element(:name, 'commit').click
   end
 
   def new_support
-    @driver.find_element(:xpath, '//a[@class="new-issue"]').click
+    #@driver.find_element(:xpath, '//a[@class="new-issue"]').click
+    @driver.find_element(:class, 'new-issue').click
     @dropdown = @driver.find_element(:id, 'issue_tracker_id')
     @select_list = Selenium::WebDriver::Support::Select.new(@dropdown)
     @select_list.select_by(:text, 'Support')
-    @driver.find_element(:id, 'issue_subject').send_keys('Lizards issue' + rand(100).to_s)
+    @driver.find_element(:id, 'issue_subject').send_keys('Lizards support')
     @driver.find_element(:name, 'commit').click
   end
 
   def new_bug
-    @driver.find_element(:xpath, '//a[@class="new-issue"]').click
+    #@driver.find_element(:xpath, '//a[@class="new-issue"]').click
+    @driver.find_element(:class, 'new-issue').click
     @dropdown = @driver.find_element(:id, 'issue_tracker_id')
     @select_list = Selenium::WebDriver::Support::Select.new(@dropdown)
     @select_list.select_by(:text, 'Bug')
-    @driver.find_element(:id, 'issue_subject').send_keys('Lizards issue' + rand(100).to_s)
+    @driver.find_element(:id, 'issue_subject').send_keys('Lizards bug')
     @driver.find_element(:name, 'commit').click
   end
 
@@ -93,33 +94,40 @@ class TestRedmine < Test::Unit::TestCase
 
   def test_registration
     create_random_account
-    expected_text = 'Ваша учётная запись активирована. Вы можете войти.'
+    expected_text_en = 'Your account has been activated. You can now log in.'
+    expected_text_ru = 'Ваша учётная запись активирована. Вы можете войти.'
     actual_text = @driver.find_element(:id, 'flash_notice').text
-    assert_equal(expected_text, actual_text)
+    assert(actual_text.include?(expected_text_en) || actual_text.include?(expected_text_ru))
   end
 
   def test_login_logout
     create_random_account
     logout
     login
-    name_after_login = @driver.find_element(:xpath, '//a[.="'+ @login + '"]')
+    logout_button = @driver.find_element(:class, 'logout')
+    assert(logout_button.displayed?)
+    name_after_login = @driver.find_element(:link, @login)
     assert(name_after_login.displayed?)
-    puts @login
   end
 
   def test_change_pwd
     create_random_account
     change_password
-    expected_text = 'Пароль успешно обновлён.'
+
+    puts @login
+    expected_text_en = 'Password was successfully updated.'
+    expected_text_ru = 'Пароль успешно обновлён.'
     actual_text = @driver.find_element(:id, 'flash_notice').text
-    assert_equal(expected_text, actual_text)
+    assert(actual_text.include?(expected_text_en) || actual_text.include?(expected_text_ru))
   end
 
   def test_create_project
     create_random_account
     new_project
-    confirmation_message = @driver.find_element(:xpath, '//div[.="Создание успешно."]')
-    assert(confirmation_message.displayed?)
+    expected_text_en = 'Successful creation.'
+    expected_text_ru = 'Создание успешно.'
+    actual_text = @driver.find_element(:id, 'flash_notice').text
+    assert(actual_text.include?(expected_text_en) || actual_text.include?(expected_text_ru))
   end
 
   def test_add_participant
@@ -130,6 +138,7 @@ class TestRedmine < Test::Unit::TestCase
     login
     new_project
     new_participant
+    puts @login
     added_username = @driver.find_element(:xpath, '//label[contains(.,"'+@lizard_firstname +' '+ @lizard_lastname+'")]/input[@type="checkbox"]')
     @wait.until{@driver.find_element(:xpath, '//label[contains(.,"'+@lizard_firstname +' '+ @lizard_lastname+'")]/input[@type="checkbox"]').displayed?}
     assert(added_username.displayed?)
@@ -143,9 +152,9 @@ class TestRedmine < Test::Unit::TestCase
     login
     new_project
     new_participant
-    @wait.until{@driver.find_element(:xpath, '//a[contains(.,"'+ @firstname+ ' ' + @lastname + '")]/ancestor::tr//a[contains(.,"Редактировать")]').displayed?}
+    @wait.until{@driver.find_element(:xpath, '//a[contains(.,"'+ @firstname+ ' ' + @lastname + '")]/ancestor::tr//a[@class="icon icon-edit"]').displayed?}
      sleep 1
-    @driver.find_element(:xpath, '//a[contains(.,"'+ @firstname+ ' ' + @lastname + '")]/ancestor::tr//a[contains(.,"Редактировать")]').click
+    @driver.find_element(:xpath, '//a[contains(.,"'+ @firstname+ ' ' + @lastname + '")]/ancestor::tr//a[@class="icon icon-edit"]').click
     @driver.find_element(:xpath, '//a[contains(.,"'+ @firstname+ ' ' + @lastname + '")]/ancestor::tr//label[contains(.,"Reporter")]/input[@type="checkbox"]').click
     @driver.find_element(:xpath, '//a[contains(.,"'+ @firstname+ ' ' + @lastname + '")]/ancestor::tr//input[@class="small"]').click
      sleep 1
@@ -157,11 +166,13 @@ class TestRedmine < Test::Unit::TestCase
     create_random_account
     new_project
     @driver.find_element(:id, 'tab-versions').click
-    @driver.find_element(:xpath, '//a[contains(@href,"versions/new?back_url=")]').click
+    @driver.find_element(:css, '#tab-content-versions .icon-add').click
     @driver.find_element(:id, 'version_name').send_keys(@firstname)
-    @driver.find_element(:xpath, '//input[@type="submit"]').click
-    message = @driver.find_element(:xpath, '//div[@id="flash_notice"][contains(.,"Создание успешно.")]')
-    assert(message.displayed?)
+    @driver.find_element(:name, 'commit').click
+    expected_text_en = 'Successful creation.'
+    expected_text_ru = 'Создание успешно.'
+    actual_text = @driver.find_element(:id, 'flash_notice').text
+    assert(actual_text.include?(expected_text_en) || actual_text.include?(expected_text_ru))
   end
 
   def test_create_issues
@@ -170,13 +181,11 @@ class TestRedmine < Test::Unit::TestCase
     new_feature
     new_support
     new_bug
-    @driver.find_element(:xpath, '//a[@class="issues selected"]').click
-    support_issue = @driver.find_element(:xpath, '//td[.="Support"]')
-    assert(support_issue.displayed?)
-    feature_issue = @driver.find_element(:xpath, '//td[.="Feature"]')
-    assert(feature_issue.displayed?)
-    bug_issue = @driver.find_element(:xpath, '//td[.="Bug"]')
-    assert(bug_issue.displayed?)
+   # @driver.find_element(:class,'issues').click
+    @driver.find_element(:link, 'Задачи').click
+    assert(@driver.find_element(:link, 'Lizards feature').displayed?)
+    assert(@driver.find_element(:link, 'Lizards bug').displayed?)
+    assert(@driver.find_element(:link, 'Lizards support').displayed?)
   end
 
 
