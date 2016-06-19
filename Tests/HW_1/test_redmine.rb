@@ -10,6 +10,7 @@ class TestRedmine < Test::Unit::TestCase
   def setup
     @driver = Selenium::WebDriver.for :firefox
     @wait = Selenium::WebDriver::Wait.new(:timeout => 10)
+    @driver.manage.timeouts.implicit_wait = 10
     @driver.navigate.to 'http://demo.redmine.org'
   end
 
@@ -20,7 +21,6 @@ class TestRedmine < Test::Unit::TestCase
   #-------------- Auxiliary methods --------------
 
   def login
-    @wait.until{@driver.find_element(:class, 'login').displayed?}
     @driver.find_element(:class, 'login').click
     @driver.find_element(:id, 'username').send_keys(@login)
     @driver.find_element(:id, 'password').send_keys('1234')
@@ -29,11 +29,10 @@ class TestRedmine < Test::Unit::TestCase
 
   def logout
     @driver.find_element(:class, 'logout').click
-    @wait.until{@driver.find_element(:class, 'register').displayed?}
   end
 
   def change_password
-    @driver.find_element(:xpath, '//a[@class="icon icon-passwd"]').click
+    @driver.find_element(:class, 'icon-passwd').click
     @driver.find_element(:name, 'password').send_keys('1234')
     @driver.find_element(:name, 'new_password').send_keys('12345')
     @driver.find_element(:name, 'new_password_confirmation').send_keys('12345')
@@ -42,7 +41,7 @@ class TestRedmine < Test::Unit::TestCase
 
   def new_project
     @driver.find_element(:class, 'projects').click
-    @driver.find_element(:xpath, '//a[@class="icon icon-add"]').click
+    @driver.find_element(:class, 'icon-add').click
     @driver.find_element(:id, 'project_name').send_keys(@login)
     @driver.find_element(:id, 'project_identifier').send_keys(@login)
     @driver.find_element(:name, 'commit').click
@@ -51,15 +50,20 @@ class TestRedmine < Test::Unit::TestCase
   def new_participant
     @driver.find_element(:id, 'tab-members').click
     @driver.find_element(:xpath, '//a[@data-remote="true"][@class="icon icon-add"]').click
-    @wait.until{@driver.find_element(:xpath, '//input[@id="principal_search"]').displayed?}
     @driver.find_element(:xpath, '//input[@id="principal_search"]').send_keys(@lizard_firstname +' '+ @lizard_lastname)
-    @wait.until{@driver.find_element(:xpath, '//label[contains(.,"'+@lizard_firstname +' '+ @lizard_lastname+'")]/input[@type="checkbox"]').displayed?}
     @driver.find_element(:xpath, '//label[contains(.,"'+@lizard_firstname +' '+ @lizard_lastname+'")]/input[@type="checkbox"]').click
-    @wait.until{@driver.find_element(:xpath, '(//label[contains(.,"Developer")]/input[@type="checkbox"])[2]').displayed?}
     @driver.find_element(:xpath, '(//label[contains(.,"Developer")]/input[@type="checkbox"])[2]').click
-    @wait.until{@driver.find_element(:id, 'member-add-submit').displayed?}
     @driver.find_element(:id, 'member-add-submit').click
   end
+
+  def edit_participant_role
+    @wait.until {@driver.find_elements(:class, 'ui-widget-overlay').empty?}
+    @driver.find_element(:xpath, '//a[contains(.,"'+ @firstname+ ' ' + @lastname + '")]/ancestor::tr//a[@class="icon icon-edit"]').click
+    @driver.find_element(:xpath, '//a[contains(.,"'+ @firstname+ ' ' + @lastname + '")]/ancestor::tr//a[@class="icon icon-edit"]').click
+    @driver.find_element(:xpath, '//a[contains(.,"'+ @firstname+ ' ' + @lastname + '")]/ancestor::tr//label[contains(.,"Reporter")]/input[@type="checkbox"]').click
+    @driver.find_element(:xpath, '//a[contains(.,"'+ @firstname+ ' ' + @lastname + '")]/ancestor::tr//input[@class="small"]').click
+  end
+
 
   def new_feature
     @driver.find_element(:class, 'new-issue').click
@@ -71,7 +75,6 @@ class TestRedmine < Test::Unit::TestCase
   end
 
   def new_support
-    #@driver.find_element(:xpath, '//a[@class="new-issue"]').click
     @driver.find_element(:class, 'new-issue').click
     @dropdown = @driver.find_element(:id, 'issue_tracker_id')
     @select_list = Selenium::WebDriver::Support::Select.new(@dropdown)
@@ -81,7 +84,6 @@ class TestRedmine < Test::Unit::TestCase
   end
 
   def new_bug
-    #@driver.find_element(:xpath, '//a[@class="new-issue"]').click
     @driver.find_element(:class, 'new-issue').click
     @dropdown = @driver.find_element(:id, 'issue_tracker_id')
     @select_list = Selenium::WebDriver::Support::Select.new(@dropdown)
@@ -139,9 +141,9 @@ class TestRedmine < Test::Unit::TestCase
     new_project
     new_participant
     puts @login
-    added_username = @driver.find_element(:xpath, '//label[contains(.,"'+@lizard_firstname +' '+ @lizard_lastname+'")]/input[@type="checkbox"]')
-    @wait.until{@driver.find_element(:xpath, '//label[contains(.,"'+@lizard_firstname +' '+ @lizard_lastname+'")]/input[@type="checkbox"]').displayed?}
-    assert(added_username.displayed?)
+    added_username1 = @driver.find_element(:link, @lizard_firstname+' '+ @lizard_lastname)
+    assert(added_username1.displayed?)
+
   end
 
   def test_edit_participant_role
@@ -152,14 +154,9 @@ class TestRedmine < Test::Unit::TestCase
     login
     new_project
     new_participant
-    @wait.until{@driver.find_element(:xpath, '//a[contains(.,"'+ @firstname+ ' ' + @lastname + '")]/ancestor::tr//a[@class="icon icon-edit"]').displayed?}
-     sleep 1
-    @driver.find_element(:xpath, '//a[contains(.,"'+ @firstname+ ' ' + @lastname + '")]/ancestor::tr//a[@class="icon icon-edit"]').click
-    @driver.find_element(:xpath, '//a[contains(.,"'+ @firstname+ ' ' + @lastname + '")]/ancestor::tr//label[contains(.,"Reporter")]/input[@type="checkbox"]').click
-    @driver.find_element(:xpath, '//a[contains(.,"'+ @firstname+ ' ' + @lastname + '")]/ancestor::tr//input[@class="small"]').click
-     sleep 1
-    role = @driver.find_element(:xpath, '//a[contains(.,"'+ @firstname+ ' ' + @lastname + '")]/ancestor::tr//span[contains(.,"Reporter")]')
-    assert(role.displayed?)
+    edit_participant_role
+    role1 = @driver.find_element(:xpath,  '//span[.="Manager, Reporter"]')
+    assert(role1.displayed?)
   end
 
   def test_create_project_version
@@ -181,8 +178,7 @@ class TestRedmine < Test::Unit::TestCase
     new_feature
     new_support
     new_bug
-   # @driver.find_element(:class,'issues').click
-    @driver.find_element(:link, 'Задачи').click
+    @driver.find_element(:class,'issues').click
     assert(@driver.find_element(:link, 'Lizards feature').displayed?)
     assert(@driver.find_element(:link, 'Lizards bug').displayed?)
     assert(@driver.find_element(:link, 'Lizards support').displayed?)
