@@ -42,7 +42,7 @@ class TestBonusTasks < Test::Unit::TestCase
     @browser.link(text: 'Frames').click
     @browser.link(text: 'iFrame').click
     @browser.iframe(id: 'mce_0_ifr').send_keys 'hello world'
-    assert(@browser.iframe(id: 'mce_0_ifr').text.include? 'Your content goes here.hello world')
+    assert(@browser.iframe(id: 'mce_0_ifr').p.text.include? 'Your content goes here.hello world')
   end
 
   def test_key_press
@@ -74,7 +74,7 @@ class TestBonusTasks < Test::Unit::TestCase
     @browser.link(text: 'Multiple Windows').click
     @browser.link(text: 'Click Here').click
     @browser.window(title:  'New Window').use do
-      assert(@browser.h3(text: 'New Window').present?)
+    assert(@browser.h3(text: 'New Window').present?)
     end
   end
 

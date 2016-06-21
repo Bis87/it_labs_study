@@ -49,19 +49,19 @@ class TestRedmine < Test::Unit::TestCase
 
   def new_participant
     @driver.find_element(:id, 'tab-members').click
-    @driver.find_element(:xpath, '//a[@data-remote="true"][@class="icon icon-add"]').click
-    @driver.find_element(:xpath, '//input[@id="principal_search"]').send_keys(@lizard_firstname +' '+ @lizard_lastname)
-    @driver.find_element(:xpath, '//label[contains(.,"'+@lizard_firstname +' '+ @lizard_lastname+'")]/input[@type="checkbox"]').click
-    @driver.find_element(:xpath, '(//label[contains(.,"Developer")]/input[@type="checkbox"])[2]').click
+    @driver.find_element(:css, '#tab-content-members p .icon-add').click
+    @driver.find_element(:id, 'principal_search').send_keys(@lizard_firstname +' '+ @lizard_lastname)
+    @wait.until{@driver.find_element(:css, '#principals label input[type=checkbox]').displayed?}
+    @driver.find_element(:css, '#principals label input[type=checkbox]').click
+    @driver.find_element(:css, '.roles-selection input[value="4"]').click
     @driver.find_element(:id, 'member-add-submit').click
   end
 
   def edit_participant_role
     @wait.until {@driver.find_elements(:class, 'ui-widget-overlay').empty?}
-    @driver.find_element(:xpath, '//a[contains(.,"'+ @firstname+ ' ' + @lastname + '")]/ancestor::tr//a[@class="icon icon-edit"]').click
-    @driver.find_element(:xpath, '//a[contains(.,"'+ @firstname+ ' ' + @lastname + '")]/ancestor::tr//a[@class="icon icon-edit"]').click
-    @driver.find_element(:xpath, '//a[contains(.,"'+ @firstname+ ' ' + @lastname + '")]/ancestor::tr//label[contains(.,"Reporter")]/input[@type="checkbox"]').click
-    @driver.find_element(:xpath, '//a[contains(.,"'+ @firstname+ ' ' + @lastname + '")]/ancestor::tr//input[@class="small"]').click
+    @driver.find_element(:css, '.odd .icon-edit').click
+    @driver.find_element(:css, '[value="5"]').click
+    @driver.find_element(:css, '.odd .small').click
   end
 
 
@@ -157,6 +157,7 @@ class TestRedmine < Test::Unit::TestCase
     edit_participant_role
     role1 = @driver.find_element(:xpath,  '//span[.="Manager, Reporter"]')
     assert(role1.displayed?)
+    puts @login
   end
 
   def test_create_project_version
