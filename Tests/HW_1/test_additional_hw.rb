@@ -20,7 +20,6 @@ class TestBonusTasks < Test::Unit::TestCase
     @browser.images(src:  '/img/avatar-blank.jpg').first.hover
     assert(@browser.div(class:'figcaption').text.include? 'name: user1')
     assert(@browser.div(xpath:'//div[@class="figcaption"]').text.include? 'name: user1')
-
   end
 
   def test_drag_and_drop

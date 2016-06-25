@@ -1,6 +1,6 @@
 require 'test/unit'
 require 'selenium-webdriver'
-
+require 'watir-webdriver'
 require_relative 'create_random_account'
 
 class TestRedmine < Test::Unit::TestCase
@@ -9,8 +9,8 @@ class TestRedmine < Test::Unit::TestCase
 
   def setup
     @driver = Selenium::WebDriver.for :firefox
-    @wait = Selenium::WebDriver::Wait.new(:timeout => 10)
-    @driver.manage.timeouts.implicit_wait = 10
+    @wait = Selenium::WebDriver::Wait.new(:timeout => 3)
+    @driver.manage.timeouts.implicit_wait = 3
     @driver.navigate.to 'http://demo.redmine.org'
   end
 
@@ -50,8 +50,8 @@ class TestRedmine < Test::Unit::TestCase
   def new_participant
     @driver.find_element(:id, 'tab-members').click
     @driver.find_element(:css, '#tab-content-members p .icon-add').click
-    @driver.find_element(:id, 'principal_search').send_keys(@lizard_firstname +' '+ @lizard_lastname)
-    @wait.until{@driver.find_element(:css, '#principals label input[type=checkbox]').displayed?}
+    @driver.find_element(:id, 'principal_search').send_keys(@participant_login)
+    @wait.until{@driver.find_element(:css, '#principals label').text == (@lizard_firstname+' '+@lizard_lastname)}
     @driver.find_element(:css, '#principals label input[type=checkbox]').click
     @driver.find_element(:css, '.roles-selection input[value="4"]').click
     @driver.find_element(:id, 'member-add-submit').click
@@ -59,11 +59,17 @@ class TestRedmine < Test::Unit::TestCase
 
   def edit_participant_role
     @wait.until {@driver.find_elements(:class, 'ui-widget-overlay').empty?}
-    @driver.find_element(:css, '.odd .icon-edit').click
-    @driver.find_element(:css, '[value="5"]').click
-    @driver.find_element(:css, '.odd .small').click
+    elements = @driver.find_elements(:css, '.name.user')
+    puts elements
+    users = elements.map{|user| user.text}
+    puts users
+    index = users.index(@lizard_firstname+' '+@lizard_lastname)
+    puts index
+    number = (index.to_i+1).to_s
+    @driver.find_element(:css, '.member:nth-child('+number+') .icon-edit').click
+    @driver.find_element(:css, '.member:nth-child('+number+') [value="3"]').click
+    @driver.find_element(:css, '.member:nth-child('+number+') .small').click
   end
-
 
   def new_feature
     @driver.find_element(:class, 'new-issue').click
@@ -99,6 +105,7 @@ class TestRedmine < Test::Unit::TestCase
     expected_text_en = 'Your account has been activated. You can now log in.'
     expected_text_ru = 'Ваша учётная запись активирована. Вы можете войти.'
     actual_text = @driver.find_element(:id, 'flash_notice').text
+    puts @login
     assert(actual_text.include?(expected_text_en) || actual_text.include?(expected_text_ru))
   end
 
@@ -143,7 +150,6 @@ class TestRedmine < Test::Unit::TestCase
     puts @login
     added_username1 = @driver.find_element(:link, @lizard_firstname+' '+ @lizard_lastname)
     assert(added_username1.displayed?)
-
   end
 
   def test_edit_participant_role
@@ -152,12 +158,12 @@ class TestRedmine < Test::Unit::TestCase
     create_participant
     logout
     login
+    puts @login
     new_project
     new_participant
     edit_participant_role
-    role1 = @driver.find_element(:xpath,  '//span[.="Manager, Reporter"]')
+    role1 = @driver.find_element(:xpath,  '//span[.="Manager, Developer"]')
     assert(role1.displayed?)
-    puts @login
   end
 
   def test_create_project_version
